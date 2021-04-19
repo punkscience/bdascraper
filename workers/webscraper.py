@@ -4,7 +4,6 @@ import os
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin, unquote
 import requests
-import json
 from datetime import datetime
 import threading
 
@@ -18,7 +17,7 @@ class ScraperThread(threading.Thread):
 
     def parseFolder( self, sub, nightFolder ):
         url = urljoin( sub, nightFolder )
-        #print( "Scanning " + url + '...') 
+        
         pagecontent = requests.get( url, headers={"User-Agent": "XY"})
         soup = BeautifulSoup( pagecontent.content, "html.parser")
 

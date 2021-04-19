@@ -1,8 +1,7 @@
 import os
-import sys
 import json
 from datetime import datetime, timedelta
-import random
+import logging
 
 from workers.webscraper import ScraperThread
 
@@ -18,7 +17,7 @@ gProcessVars = {
 
   
 def startWebScraping( rootUrl ):
-    print( "Starting web scraping from {}...".format( rootUrl ))
+    logging.info("Starting web scraping from {}...".format(rootUrl))
     gProcessVars['scrape_thread'] = ScraperThread(rootUrl, onScraperUpdate, onScraperComplete )
     gProcessVars['scrape_thread'].start()
     
@@ -29,7 +28,7 @@ def onScraperComplete( newdb ):
     for obj in newdb['files']:
         if obj not in gProcessVars['db']['files']:
             gProcessVars['db']['files'].append(obj)
-            print( "Adding new mix: {}".format(obj['filename']))
+            logging.info("Adding new mix: {}".format(obj['filename']))
 
     gProcessVars['db']['last_scan'] = datetime.now().isoformat()
 
@@ -37,14 +36,17 @@ def onScraperComplete( newdb ):
     with open( DBFILE, "w" ) as f:
         json.dump(gProcessVars['db'], f, indent=4)
 
-    print( "Completed scraping.")
+    logging.info("Completed scraping.")
 
 def writeDb( self ):
     gProcessVars['db']['output'] = ''
     with open( DBFILE, "w") as f:
         json.dump( self.db, f, indent=4)        
 
+
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+
     # Read in what we've already scanned
     if os.path.isfile(DBFILE):
         with open(DBFILE, "r") as f:
@@ -55,13 +57,14 @@ if __name__ == '__main__':
             "files": []
         }
 
-    print('Last scrape was {}'.format(gProcessVars['db']['last_scan'] ))
+    logging.info('Last scrape was {}'.format(gProcessVars['db']['last_scan'] ))
+
     okToScrape = datetime.now() >= datetime.fromisoformat(
         gProcessVars['db']['last_scan']) + timedelta(hours=12)
     if DEBUG == True or okToScrape == True:
         startWebScraping(ROOTURL)
     else:
-        print( "Nothing to scrape.")
+        logging.info("Nothing to scrape.")
 
 
 
