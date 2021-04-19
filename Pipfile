@@ -9,6 +9,7 @@ bs4 = "*"
 urllib3 = "*"
 protobuf = "*"
 zeroconf = "*"
+apscheduler = "*"
 
 [dev-packages]
 
