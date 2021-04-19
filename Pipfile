@@ -7,11 +7,8 @@ name = "pypi"
 requests = "*"
 bs4 = "*"
 urllib3 = "*"
-pyside2 = "*"
 protobuf = "*"
 zeroconf = "*"
-pychromecast = "*"
-python-vlc = "*"
 
 [dev-packages]
 
