@@ -1,6 +1,4 @@
 
-from PySide2.QtCore import *
-from PySide2.QtGui import *
 import requests
 import os
 from bs4 import BeautifulSoup
@@ -8,15 +6,15 @@ from urllib.parse import urlparse, urljoin, unquote
 import requests
 import json
 from datetime import datetime
+import threading
 
-class ScraperThread(QThread):
+class ScraperThread(threading.Thread):
 
-    scraper_complete = Signal(object)
-    scraper_update = Signal(object)
-
-    def __init__(self, rootUrl ):
-        QThread.__init__(self)
+    def __init__(self, rootUrl, update_func, complete_func ):
+        threading.Thread.__init__(self, target=self.run, args=(1,))
         self.rootUrl = rootUrl
+        self.updateFunc = update_func
+        self.completeFunc = complete_func
 
     def parseFolder( self, sub, nightFolder ):
         url = urljoin( sub, nightFolder )
@@ -45,12 +43,11 @@ class ScraperThread(QThread):
                 obj = {
                     'event': unquote( nightFolder ).replace( '/', ''),
                     "url": mp3url,
-                    "filename": filename,
-                    "downloaded": False
+                    "filename": filename
                 }
                 
                 self.db['files'].append( obj )
-                self.scraper_update.emit( obj )
+                self.updateFunc( obj )
 
     def run(self):
         
@@ -64,5 +61,5 @@ class ScraperThread(QThread):
         # Parse the web
         self.parseFolder( self.rootUrl, '')
 
-        self.scraper_complete.emit( self.db )
+        self.completeFunc( self.db )
         
