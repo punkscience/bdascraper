@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timedelta
 import logging
 import argparse
-#from apscheduler.schedulers import BlockingScheduler 
+from apscheduler.schedulers.blocking import BlockingScheduler
 
 from workers.webscraper import ScraperThread
 
@@ -15,16 +15,14 @@ DEBUG = False
 gProcessVars = {
     'scrape_thread': None,
     'db': None,
-    'hours': 0
+    'wait_minutes': 0
 }
 
-# sched = BlockingScheduler()
-# sched.start()
-
   
-def startWebScraping( rootUrl ):
-    logging.info("Starting web scraping from {}...".format(rootUrl))
-    gProcessVars['scrape_thread'] = ScraperThread(rootUrl, onScraperUpdate, onScraperComplete )
+def startWebScraping():
+    logging.info("Starting web scraping from {}...".format(ROOTURL))
+    gProcessVars['scrape_thread'] = ScraperThread(
+        ROOTURL, onScraperUpdate, onScraperComplete)
     gProcessVars['scrape_thread'].start()
     gProcessVars['scrape_thread'].join()
     
@@ -54,11 +52,16 @@ def writeDb( self ):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser(description='Scan BassDrive.com every few hours.')
-    parser.add_argument('hours', metavar='N', type=int, nargs='+',
-                        help='The number of hours between each scan')
+    parser.add_argument('minutes', metavar='N', type=int, nargs='+',
+                        help='The number of minutes between each scan')
     args = parser.parse_args()
-    logging.info( "Scanning every {} hours.".format( args.hours[0] ) )
-    gProcessVars['hours'] = args.hours[0]
+    logging.info( "Scanning every {} hours.".format( args.minutes[0] ) )
+    gProcessVars['wait_minutes'] = args.minutes[0]
+
+    # We can't go less than 10
+    if gProcessVars['wait_minutes'] < 10:
+        logging.warn("Setting wait minutes to minimum of 10 minutes.")
+        gProcessVars['wait_minutes'] = 10
 
     # Read in what we've already scanned
     if os.path.isfile(DBFILE):
@@ -73,15 +76,9 @@ if __name__ == '__main__':
     logging.info('Last scrape was {}'.format(gProcessVars['db']['last_scan'] ))
     logging.info('Scrape active and waiting...')
 
-    #sched.add_job( startWebScraping, 'interval', minutes=5 )
-
-    while True:
-        okToScrape = datetime.now() >= datetime.fromisoformat(
-            gProcessVars['db']['last_scan']) + timedelta(hours=gProcessVars['hours'])
-    
-        if DEBUG == True or okToScrape == True:
-            startWebScraping(ROOTURL)
-
+    sched = BlockingScheduler()
+    sched.start()
+    sched.add_job(startWebScraping, 'interval', minutes=gProcessVars['wait_minutes'])
 
 
 
